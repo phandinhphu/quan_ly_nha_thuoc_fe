@@ -4,12 +4,19 @@ import { Plus } from 'lucide-react';
 import drugService from '../../services/drugService';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
+import Pagination from '../../components/common/Pagination';
 
 const DrugCategories = () => {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
+    const [pagination, setPagination] = useState({
+        page: 0,
+        size: 10,
+        totalItems: 0,
+        totalPages: 0,
+    });
     const [formData, setFormData] = useState({
         maLoai: '',
         tenLoai: '',
@@ -17,13 +24,37 @@ const DrugCategories = () => {
     });
 
     useEffect(() => {
-        fetchCategories();
-    }, []);
+        fetchCategoriesPaged();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pagination.page, pagination.size]);
 
-    const fetchCategories = async () => {
+    const normalizePagedResponse = (response) => {
+        const dataWrapper = response?.data;
+        const items = dataWrapper?.items ?? dataWrapper ?? [];
+        const paging = dataWrapper?.pagination;
+
+        return {
+            items: Array.isArray(items) ? items : [],
+            pagination: paging,
+        };
+    };
+
+    const fetchCategoriesPaged = async () => {
+        setLoading(true);
         try {
-            const data = await drugService.getCategories();
-            setCategories(data.data);
+            const res = await drugService.getCategoriesPaged(pagination.page, pagination.size);
+            const { items, pagination: serverPaging } = normalizePagedResponse(res);
+
+            setCategories(items);
+            if (serverPaging) {
+                setPagination((prev) => ({
+                    ...prev,
+                    page: serverPaging.page ?? prev.page,
+                    size: serverPaging.size ?? prev.size,
+                    totalItems: serverPaging.totalItems ?? prev.totalItems,
+                    totalPages: serverPaging.totalPages ?? prev.totalPages,
+                }));
+            }
         } catch {
             toast.error('Lỗi khi tải dữ liệu');
         } finally {
@@ -62,7 +93,7 @@ const DrugCategories = () => {
                 toast.success('Thêm loại thuốc thành công');
             }
             handleCloseModal();
-            fetchCategories();
+            fetchCategoriesPaged();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
         }
@@ -73,7 +104,7 @@ const DrugCategories = () => {
             try {
                 await drugService.deleteCategory(category.maLoai);
                 toast.success('Xóa loại thuốc thành công');
-                fetchCategories();
+                fetchCategoriesPaged();
             } catch {
                 toast.error('Lỗi khi xóa loại thuốc');
             }
@@ -112,6 +143,14 @@ const DrugCategories = () => {
                 data={categories}
                 onEdit={handleOpenModal}
                 onDelete={handleDelete}
+            />
+
+            <Pagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalItems}
+                disabled={loading}
+                onPageChange={(nextPage) => setPagination((prev) => ({ ...prev, page: nextPage }))}
             />
 
             <Modal

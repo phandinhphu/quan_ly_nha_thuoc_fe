@@ -15,6 +15,24 @@ const drugService = {
         return response.data;
     },
 
+    // Lấy danh sách loại thuốc có phân trang (và search nếu backend hỗ trợ)
+    // API trả về: { success, message, data: { items: [], pagination: { page, size, totalItems, totalPages } } }
+    getCategoriesPaged: async (page, size, searchTerm = '') => {
+        const response = await PmaRequest.get(
+            `${API_ENDPOINTS.DRUGS.CATEGORIES_PAGE_SEARCH}?page=${page}&size=${size}&tenLoai=${encodeURIComponent(searchTerm || '')}`
+        );
+        return response.data;
+    },
+
+    // Lấy danh sách thuốc có phân trang + search
+    // API trả về: { success, message, data: { items: [], pagination: { page, size, totalItems, totalPages } } }
+    getDrugsPaged: async (page, size, searchTerm = '') => {
+        const response = await PmaRequest.get(
+            `${API_ENDPOINTS.DRUGS.PAGE_SEARCH}?page=${page}&size=${size}&tenThuoc=${encodeURIComponent(searchTerm || '')}`
+        );
+        return response.data;
+    },
+
     // Lấy chi tiết loại thuốc
     getCategoryById: async (maLoai) => {
         const response = await PmaRequest.get(`${API_ENDPOINTS.DRUGS.CATEGORIES}/${maLoai}`);
@@ -43,6 +61,15 @@ const drugService = {
     // Lấy danh sách đơn vị tính
     getUnits: async () => {
         const response = await PmaRequest.get(API_ENDPOINTS.DRUGS.UNITS);
+        return response.data;
+    },
+
+    // Lấy danh sách đơn vị tính có phân trang (và search nếu backend hỗ trợ)
+    // API trả về: { success, message, data: { items: [], pagination: { page, size, totalItems, totalPages } } }
+    getUnitsPaged: async (page, size, searchTerm = '') => {
+        const response = await PmaRequest.get(
+            `${API_ENDPOINTS.DRUGS.UNITS_PAGE_SEARCH}?page=${page}&size=${size}&tenDonVi=${encodeURIComponent(searchTerm || '')}`
+        );
         return response.data;
     },
 

@@ -5,6 +5,7 @@ import supplierService from '../../services/supplierService';
 import drugService from '../../services/drugService';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
+import Pagination from '../../components/common/Pagination';
 
 const Receipts = () => {
     const [receipts, setReceipts] = useState([]);
@@ -12,6 +13,12 @@ const Receipts = () => {
     const [drugs, setDrugs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
+    const [pagination, setPagination] = useState({
+        page: 0,
+        size: 10,
+        totalItems: 0,
+        totalPages: 0,
+    });
     const [formData, setFormData] = useState({
         maPhieuNhap: '',
         ngayNhap: '',
@@ -21,19 +28,54 @@ const Receipts = () => {
     });
 
     useEffect(() => {
-        fetchData();
+        const fetchStaticData = async () => {
+            try {
+                const [suppliersData, drugsData] = await Promise.all([
+                    supplierService.getSuppliers(),
+                    drugService.getDrugs(),
+                ]);
+                setSuppliers(suppliersData.data);
+                setDrugs(drugsData.data);
+            } catch {
+                toast.error('Lỗi khi tải dữ liệu');
+            }
+        };
+
+        fetchStaticData();
     }, []);
 
-    const fetchData = async () => {
+    useEffect(() => {
+        fetchReceiptsPaged();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pagination.page, pagination.size]);
+
+    const normalizePagedResponse = (response) => {
+        const dataWrapper = response?.data;
+        const items = dataWrapper?.items ?? dataWrapper ?? [];
+        const paging = dataWrapper?.pagination;
+
+        return {
+            items: Array.isArray(items) ? items : [],
+            pagination: paging,
+        };
+    };
+
+    const fetchReceiptsPaged = async () => {
+        setLoading(true);
         try {
-            const [receiptsData, suppliersData, drugsData] = await Promise.all([
-                supplierService.getReceipts(),
-                supplierService.getSuppliers(),
-                drugService.getDrugs(),
-            ]);
-            setReceipts(receiptsData.data);
-            setSuppliers(suppliersData.data);
-            setDrugs(drugsData.data);
+            const res = await supplierService.getReceiptsPaged(pagination.page, pagination.size);
+            const { items, pagination: serverPaging } = normalizePagedResponse(res);
+
+            setReceipts(items);
+            if (serverPaging) {
+                setPagination((prev) => ({
+                    ...prev,
+                    page: serverPaging.page ?? prev.page,
+                    size: serverPaging.size ?? prev.size,
+                    totalItems: serverPaging.totalItems ?? prev.totalItems,
+                    totalPages: serverPaging.totalPages ?? prev.totalPages,
+                }));
+            }
         } catch {
             toast.error('Lỗi khi tải dữ liệu');
         } finally {
@@ -85,7 +127,7 @@ const Receipts = () => {
             await supplierService.createReceipt(formData);
             toast.success('Tạo phiếu nhập thành công');
             handleCloseModal();
-            fetchData();
+            fetchReceiptsPaged();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
         }
@@ -96,7 +138,7 @@ const Receipts = () => {
             try {
                 await supplierService.deleteReceipt(receipt.maPhieuNhap);
                 toast.success('Xóa phiếu nhập thành công');
-                fetchData();
+                fetchReceiptsPaged();
             } catch {
                 toast.error('Lỗi khi xóa phiếu nhập');
             }
@@ -149,6 +191,14 @@ const Receipts = () => {
                 columns={columns}
                 data={receipts}
                 onDelete={handleDelete}
+            />
+
+            <Pagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalItems}
+                disabled={loading}
+                onPageChange={(nextPage) => setPagination((prev) => ({ ...prev, page: nextPage }))}
             />
 
             <Modal

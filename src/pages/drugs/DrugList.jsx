@@ -4,6 +4,7 @@ import { Plus, Search } from 'lucide-react';
 import drugService from '../../services/drugService';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
+import Pagination from '../../components/common/Pagination';
 
 const DrugList = () => {
     const [drugs, setDrugs] = useState([]);
@@ -11,8 +12,15 @@ const DrugList = () => {
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
     const [editingDrug, setEditingDrug] = useState(null);
+    const [pagination, setPagination] = useState({
+        page: 0,
+        size: 10,
+        totalItems: 0,
+        totalPages: 0,
+    });
     const [formData, setFormData] = useState({
         maThuoc: '',
         tenThuoc: '',
@@ -27,20 +35,59 @@ const DrugList = () => {
     });
 
     useEffect(() => {
-        fetchData();
+        const fetchStaticData = async () => {
+            try {
+                const [categoriesData, unitsData] = await Promise.all([
+                    drugService.getCategories(),
+                    drugService.getUnits(),
+                ]);
+                setCategories(categoriesData.data);
+                setUnits(unitsData.data);
+            } catch {
+                toast.error('Lỗi khi tải dữ liệu');
+            }
+        };
+
+        fetchStaticData();
     }, []);
 
-    const fetchData = async () => {
+    useEffect(() => {
+        fetchDrugsPaged();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pagination.page, pagination.size, searchQuery]);
+
+    const normalizePagedResponse = (response) => {
+        // Expected: { success, message, data: { items: [], pagination: { page, size, totalItems, totalPages } } }
+        // Fallback: existing endpoints in this app sometimes return { data: [] }
+        const dataWrapper = response?.data;
+        const items = dataWrapper?.items ?? dataWrapper ?? [];
+        const paging = dataWrapper?.pagination;
+
+        return {
+            items: Array.isArray(items) ? items : [],
+            pagination: paging,
+        };
+    };
+
+    const fetchDrugsPaged = async () => {
+        setLoading(true);
         try {
-            const [drugsData, categoriesData, unitsData] = await Promise.all([
-                drugService.getDrugs(),
-                drugService.getCategories(),
-                drugService.getUnits(),
-            ]);
-            setDrugs(drugsData.data);
-            setCategories(categoriesData.data);
-            setUnits(unitsData.data);
-        } catch (error) {
+            const res = await drugService.getDrugsPaged(pagination.page, pagination.size, searchQuery);
+            const { items, pagination: serverPaging } = normalizePagedResponse(res);
+
+            setDrugs(items);
+            if (serverPaging) {
+                setPagination((prev) => ({
+                    ...prev,
+                    page: serverPaging.page ?? prev.page,
+                    size: serverPaging.size ?? prev.size,
+                    totalItems: serverPaging.totalItems ?? prev.totalItems,
+                    totalPages: serverPaging.totalPages ?? prev.totalPages,
+                }));
+
+                
+            }
+        } catch {
             toast.error('Lỗi khi tải dữ liệu');
         } finally {
             setLoading(false);
@@ -48,16 +95,9 @@ const DrugList = () => {
     };
 
     const handleSearch = async () => {
-        if (!searchTerm.trim()) {
-            fetchData();
-            return;
-        }
-        try {
-            const results = await drugService.searchDrugsByName(searchTerm);
-            setDrugs(results);
-        } catch (error) {
-            toast.error('Lỗi khi tìm kiếm');
-        }
+        const nextQuery = searchTerm.trim();
+        setPagination((prev) => ({ ...prev, page: 0 }));
+        setSearchQuery(nextQuery);
     };
 
     const handleOpenModal = (drug = null) => {
@@ -109,7 +149,7 @@ const DrugList = () => {
                 toast.success('Thêm thuốc thành công');
             }
             handleCloseModal();
-            fetchData();
+            fetchDrugsPaged();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
         }
@@ -120,8 +160,8 @@ const DrugList = () => {
             try {
                 await drugService.deleteDrug(drug.maThuoc);
                 toast.success('Xóa thuốc thành công');
-                fetchData();
-            } catch (error) {
+                fetchDrugsPaged();
+            } catch {
                 toast.error('Lỗi khi xóa thuốc');
             }
         }
@@ -190,6 +230,14 @@ const DrugList = () => {
                 data={drugs}
                 onEdit={handleOpenModal}
                 onDelete={handleDelete}
+            />
+
+            <Pagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalItems}
+                disabled={loading}
+                onPageChange={(nextPage) => setPagination((prev) => ({ ...prev, page: nextPage }))}
             />
 
             <Modal

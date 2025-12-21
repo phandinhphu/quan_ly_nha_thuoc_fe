@@ -23,7 +23,7 @@ const InventoryHistory = () => {
     };
 
     const columns = [
-        { key: 'id', label: 'ID' },
+        { key: 'maLS', label: 'ID' },
         { key: 'maThuoc', label: 'Mã thuốc' },
         { 
             key: 'soLuongThayDoi', 
@@ -36,9 +36,9 @@ const InventoryHistory = () => {
         },
         { key: 'lyDo', label: 'Lý do' },
         { 
-            key: 'ngayThayDoi', 
+            key: 'ngayCapNhat', 
             label: 'Ngày thay đổi',
-            render: (row) => row.ngayThayDoi ? new Date(row.ngayThayDoi).toLocaleString('vi-VN') : ''
+            render: (row) => row.ngayCapNhat ? new Date(row.ngayCapNhat).toLocaleString('vi-VN') : ''
         },
     ];
 

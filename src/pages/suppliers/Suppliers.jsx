@@ -4,12 +4,19 @@ import { Plus } from 'lucide-react';
 import supplierService from '../../services/supplierService';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
+import Pagination from '../../components/common/Pagination';
 
 const Suppliers = () => {
     const [suppliers, setSuppliers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState(null);
+    const [pagination, setPagination] = useState({
+        page: 0,
+        size: 10,
+        totalItems: 0,
+        totalPages: 0,
+    });
     const [formData, setFormData] = useState({
         maNCC: '',
         tenNCC: '',
@@ -20,13 +27,37 @@ const Suppliers = () => {
     });
 
     useEffect(() => {
-        fetchSuppliers();
-    }, []);
+        fetchSuppliersPaged();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pagination.page, pagination.size]);
 
-    const fetchSuppliers = async () => {
+    const normalizePagedResponse = (response) => {
+        const dataWrapper = response?.data;
+        const items = dataWrapper?.items ?? dataWrapper ?? [];
+        const paging = dataWrapper?.pagination;
+
+        return {
+            items: Array.isArray(items) ? items : [],
+            pagination: paging,
+        };
+    };
+
+    const fetchSuppliersPaged = async () => {
+        setLoading(true);
         try {
-            const data = await supplierService.getSuppliers();
-            setSuppliers(data.data);
+            const res = await supplierService.getSuppliersPaged(pagination.page, pagination.size);
+            const { items, pagination: serverPaging } = normalizePagedResponse(res);
+
+            setSuppliers(items);
+            if (serverPaging) {
+                setPagination((prev) => ({
+                    ...prev,
+                    page: serverPaging.page ?? prev.page,
+                    size: serverPaging.size ?? prev.size,
+                    totalItems: serverPaging.totalItems ?? prev.totalItems,
+                    totalPages: serverPaging.totalPages ?? prev.totalPages,
+                }));
+            }
         } catch {
             toast.error('Lỗi khi tải dữ liệu');
         } finally {
@@ -75,7 +106,7 @@ const Suppliers = () => {
                 toast.success('Thêm nhà cung cấp thành công');
             }
             handleCloseModal();
-            fetchSuppliers();
+            fetchSuppliersPaged();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
         }
@@ -86,7 +117,7 @@ const Suppliers = () => {
             try {
                 await supplierService.deleteSupplier(supplier.maNCC);
                 toast.success('Xóa nhà cung cấp thành công');
-                fetchSuppliers();
+                fetchSuppliersPaged();
             } catch {
                 toast.error('Lỗi khi xóa nhà cung cấp');
             }
@@ -127,6 +158,14 @@ const Suppliers = () => {
                 data={suppliers}
                 onEdit={handleOpenModal}
                 onDelete={handleDelete}
+            />
+
+            <Pagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalItems}
+                disabled={loading}
+                onPageChange={(nextPage) => setPagination((prev) => ({ ...prev, page: nextPage }))}
             />
 
             <Modal

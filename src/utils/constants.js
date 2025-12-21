@@ -12,8 +12,11 @@ export const API_ENDPOINTS = {
     // Drug Service
     DRUGS: {
         BASE: '/drugs',
+        PAGE_SEARCH: '/drugs/search',
         CATEGORIES: '/drugs/categories',
+        CATEGORIES_PAGE_SEARCH: '/drugs/categories/search',
         UNITS: '/drugs/units',
+        UNITS_PAGE_SEARCH: '/drugs/units/search',
         SEARCH: '/drugs/search',
         BY_CATEGORY: '/drugs/category',
         LOW_STOCK: '/drugs/low-stock',
@@ -39,7 +42,9 @@ export const API_ENDPOINTS = {
     // Supplier Service
     SUPPLIERS: {
         BASE: '/suppliers',
+        PAGE: '/suppliers/page',
         RECEIPTS: '/suppliers/receipts',
+        RECEIPTS_PAGE: '/suppliers/receipts/page',
     },
 };
 

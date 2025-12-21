@@ -15,6 +15,12 @@ const supplierService = {
         return response.data;
     },
 
+    // Lấy danh sách nhà cung cấp có phân trang
+    getSuppliersPaged: async (page, size) => {
+        const response = await PmaRequest.get(`${API_ENDPOINTS.SUPPLIERS.PAGE}?page=${page}&size=${size}`);
+        return response.data;
+    },
+
     // Lấy chi tiết nhà cung cấp
     getSupplierById: async (maNCC) => {
         const response = await PmaRequest.get(`${API_ENDPOINTS.SUPPLIERS.BASE}/${maNCC}`);
@@ -43,6 +49,12 @@ const supplierService = {
     // Lấy danh sách phiếu nhập
     getReceipts: async () => {
         const response = await PmaRequest.get(API_ENDPOINTS.SUPPLIERS.RECEIPTS);
+        return response.data;
+    },
+
+    // Lấy danh sách phiếu nhập có phân trang
+    getReceiptsPaged: async (page, size) => {
+        const response = await PmaRequest.get(`${API_ENDPOINTS.SUPPLIERS.RECEIPTS_PAGE}?page=${page}&size=${size}`);
         return response.data;
     },
 

@@ -4,25 +4,56 @@ import { Plus } from 'lucide-react';
 import drugService from '../../services/drugService';
 import DataTable from '../../components/common/DataTable';
 import Modal from '../../components/common/Modal';
+import Pagination from '../../components/common/Pagination';
 
 const DrugUnits = () => {
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingUnit, setEditingUnit] = useState(null);
+    const [pagination, setPagination] = useState({
+        page: 0,
+        size: 10,
+        totalItems: 0,
+        totalPages: 0,
+    });
     const [formData, setFormData] = useState({
         maDonVi: '',
         tenDonVi: '',
     });
 
     useEffect(() => {
-        fetchUnits();
-    }, []);
+        fetchUnitsPaged();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pagination.page, pagination.size]);
 
-    const fetchUnits = async () => {
+    const normalizePagedResponse = (response) => {
+        const dataWrapper = response?.data;
+        const items = dataWrapper?.items ?? dataWrapper ?? [];
+        const paging = dataWrapper?.pagination;
+
+        return {
+            items: Array.isArray(items) ? items : [],
+            pagination: paging,
+        };
+    };
+
+    const fetchUnitsPaged = async () => {
+        setLoading(true);
         try {
-            const data = await drugService.getUnits();
-            setUnits(data.data);
+            const res = await drugService.getUnitsPaged(pagination.page, pagination.size);
+            const { items, pagination: serverPaging } = normalizePagedResponse(res);
+
+            setUnits(items);
+            if (serverPaging) {
+                setPagination((prev) => ({
+                    ...prev,
+                    page: serverPaging.page ?? prev.page,
+                    size: serverPaging.size ?? prev.size,
+                    totalItems: serverPaging.totalItems ?? prev.totalItems,
+                    totalPages: serverPaging.totalPages ?? prev.totalPages,
+                }));
+            }
         } catch {
             toast.error('Lỗi khi tải dữ liệu');
         } finally {
@@ -60,7 +91,7 @@ const DrugUnits = () => {
                 toast.success('Thêm đơn vị tính thành công');
             }
             handleCloseModal();
-            fetchUnits();
+            fetchUnitsPaged();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
         }
@@ -71,7 +102,7 @@ const DrugUnits = () => {
             try {
                 await drugService.deleteUnit(unit.maDonVi);
                 toast.success('Xóa đơn vị tính thành công');
-                fetchUnits();
+                fetchUnitsPaged();
             } catch {
                 toast.error('Lỗi khi xóa đơn vị tính');
             }
@@ -109,6 +140,14 @@ const DrugUnits = () => {
                 data={units}
                 onEdit={handleOpenModal}
                 onDelete={handleDelete}
+            />
+
+            <Pagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalItems}
+                disabled={loading}
+                onPageChange={(nextPage) => setPagination((prev) => ({ ...prev, page: nextPage }))}
             />
 
             <Modal
