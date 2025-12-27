@@ -11,7 +11,12 @@ import {
     AlertTriangle,
     LogOut,
     Menu,
-    X
+    X,
+    ShoppingCart,
+    ChevronDown,
+    ChevronRight,
+    FilePlus,
+    History
 } from 'lucide-react';
 
 const MainLayout = () => {
@@ -35,6 +40,8 @@ const MainLayout = () => {
         { name: 'Lịch sử tồn kho', href: '/inventory-history', icon: FileText },
         { name: 'Nhà cung cấp', href: '/suppliers', icon: Users },
         { name: 'Phiếu nhập', href: '/receipts', icon: FileText },
+        { name: 'Tạo đơn thuốc', href: '/sales/create', icon: FilePlus },
+        { name: 'Lich sử đơn thuốc', href: '/sales/history', icon: History },
     ];
 
     return (

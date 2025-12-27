@@ -10,6 +10,9 @@ const StockAlerts = lazy(() => import('../pages/inventory/StockAlerts'));
 const InventoryHistory = lazy(() => import('../pages/inventory/InventoryHistory'));
 const Suppliers = lazy(() => import('../pages/suppliers/Suppliers'));
 const Receipts = lazy(() => import('../pages/suppliers/Receipts'));
+const CreateInvoice = lazy(() => import('../pages/sales/CreateInvoice'));
+const InvoiceList = lazy(() => import('../pages/sales/InvoiceList'));
+const ReportPage = lazy(() => import('../pages/reports/ReportPage'));
 
 const privateRoutes = [
     { path: '/', component: Dashboard, layout: MainLayout, requiresAuth: true },
@@ -21,6 +24,9 @@ const privateRoutes = [
     { path: '/inventory-history', component: InventoryHistory, layout: MainLayout, requiresAuth: true },
     { path: '/suppliers', component: Suppliers, layout: MainLayout, requiresAuth: true },
     { path: '/receipts', component: Receipts, layout: MainLayout, requiresAuth: true },
+    { path: '/sales/create', component: CreateInvoice, layout: MainLayout, requiresAuth: true },
+    { path: '/sales/history', component: InvoiceList, layout: MainLayout, requiresAuth: true },
+    { path: '/reports', component: ReportPage, layout: MainLayout, requiresAuth: true}
 ];
 
 export default privateRoutes;

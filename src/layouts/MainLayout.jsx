@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, href } from 'react-router-dom';
 import { useAuth } from '../hooks/auth';
 import { 
     Home, 
@@ -17,7 +17,9 @@ import {
     Search,
     Settings,
     User,
-    ShoppingBag
+    ShoppingBag,
+    ShoppingCart,
+    PieChart
 } from 'lucide-react';
 
 const MainLayout = ({ children }) => {
@@ -60,6 +62,15 @@ const MainLayout = ({ children }) => {
                 { name: 'Phiếu nhập', href: '/receipts' },
             ]
         },
+        {
+            name: 'Bán thuốc',
+            icon: ShoppingCart,
+            children: [
+                {name: 'Tạo đơn thuốc', href: '/sales/create'},
+                {name: 'Lịch sử hóa đơn', href: '/sales/history'},
+            ]
+        },
+        { name: 'Báo cáo thống kê', href: '/reports', icon: PieChart }
     ];
 
     const [expandedMenus, setExpandedMenus] = useState({});

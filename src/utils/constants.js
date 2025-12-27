@@ -46,6 +46,14 @@ export const API_ENDPOINTS = {
         RECEIPTS: '/suppliers/receipts',
         RECEIPTS_PAGE: '/suppliers/receipts/page',
     },
+    // Sales Service
+    SALES: {
+        INVOICES: '/sales/invoices',
+    },
+    // Reporter Service
+    REPORTS: {
+        SUMMARY: '/reports/summary',
+    }
 };
 
 // User Roles

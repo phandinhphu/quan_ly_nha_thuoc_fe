@@ -112,7 +112,7 @@ const drugService = {
 
     // Tìm kiếm thuốc theo tên
     searchDrugsByName: async (name) => {
-        const response = await PmaRequest.get(`${API_ENDPOINTS.DRUGS.SEARCH}?name=${name}`);
+        const response = await PmaRequest.get(`${API_ENDPOINTS.DRUGS.SEARCH}?tenThuoc=${name}`);
         return response.data;
     },
 
