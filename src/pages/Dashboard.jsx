@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { format, subDays } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 import {
     Pill,
     Warehouse,
@@ -12,6 +15,7 @@ import {
 
 import drugService from '../services/drugService';
 import supplierService from '../services/supplierService';
+import reportService from '../services/reportService';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -20,6 +24,9 @@ const Dashboard = () => {
         expiringDrugs: 0,
         totalSuppliers: 0,
     });
+
+    const [revenueData, setRevenueData] = useState([]);
+    const [productMixData, setProductMixData] = useState([]);
 
     const [loading, setLoading] = useState(true);
 
@@ -42,11 +49,78 @@ const Dashboard = () => {
                 expiringDrugs: expiring.data.length,
                 totalSuppliers: suppliers.data.length,
             });
+            // lay doanh thu 7 ngay gan nhat
+            const sevenDayReports = await fetchRevenueChartData();
+            processCategoryData(sevenDayReports, drugs.data);
         } catch (error) {
             console.error('Dashboard error:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchRevenueChartData = async () => {
+        const daysToFetch = 7;
+        const promises = [];
+        const dateList = [];
+
+        for (let i = daysToFetch - 1; i >= 0; i--) {
+            const date = subDays(new Date(), i);
+            const dateString = format(date, 'yyyy-MM-dd');
+            const displayDate = format(date, 'dd/MM');
+            dateList.push({ dateString, displayDate });
+            promises.push(reportService.getSummary(dateString));
+        }
+
+        const responses = await Promise.all(promises);
+
+        // Xử lý dữ liệu cho biểu đồ Cột (Doanh thu)
+        const revenueChartData = responses.map((res, index) => ({
+            name: dateList[index].displayDate,
+            revenue: res.totalRevenue || 0,
+        }));
+        setRevenueData(revenueChartData);
+
+        // Trả về responses thô để dùng cho biểu đồ Tròn
+        return responses; 
+    };
+
+    const processCategoryData = (reports, allDrugs) => {
+        const drugMap = {};
+        allDrugs.forEach(drug => {
+            drugMap[drug.maThuoc] = drug; 
+        });
+
+        const categoryMap = {};
+
+        reports.forEach(report => {
+            if (report.topSellingDrugs) {
+                report.topSellingDrugs.forEach(soldDrug => {
+                    const drugInfo = drugMap[soldDrug.maThuoc];
+                    
+                    const categoryName = drugInfo ? drugInfo.tenLoai : 'Khác';
+
+                    if (!categoryMap[categoryName]) {
+                        categoryMap[categoryName] = 0;
+                    }
+                    
+                    // Tính doanh thu = Số lượng (từ report) * Giá bán (từ thông tin thuốc)
+                    const price = drugInfo ? drugInfo.giaBan : 0;
+                    const quantity = soldDrug.soLuongDaBan || 0;
+                    const estimatedRevenue = quantity * price;
+
+                    categoryMap[categoryName] += estimatedRevenue;
+                });
+            }
+        });
+
+        // Chuyển đổi sang định dạng cho Recharts
+        const chartData = Object.keys(categoryMap).map(key => ({
+            name: key,
+            value: categoryMap[key]
+        })).filter(item => item.value > 0);
+
+        setProductMixData(chartData);
     };
 
     const cards = [
@@ -131,23 +205,81 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Revenue Chart */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm">
-                    <h3 className="font-bold text-lg mb-2">
-                        Doanh thu theo ngày
+                    <h3 className="font-bold text-lg mb-4">
+                        Doanh thu 7 ngày qua
                     </h3>
-                    <div className="h-64 flex items-center justify-center text-gray-400">
-                        <Activity className="h-16 w-16 mb-2" />
-                        <p>Biểu đồ doanh thu</p>
+                    <div className="h-64 w-full">
+                        {/* Biểu đồ Recharts */}
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={revenueData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis 
+                                    dataKey="name" 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                                    dy={10}
+                                />
+                                <Tooltip 
+                                    formatter={(value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)}
+                                    cursor={{ fill: '#f3f4f6' }}
+                                />
+                                <Bar 
+                                    dataKey="revenue" 
+                                    name="Doanh thu"
+                                    fill="#4f46e5" 
+                                    radius={[4, 4, 0, 0]} 
+                                    barSize={30}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
                 {/* Product Structure */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm">
-                    <h3 className="font-bold text-lg mb-2">
-                        Cơ cấu bán hàng
+                    <h3 className="font-bold text-lg mb-4">
+                        Cơ cấu doanh thu theo nhóm (7 ngày)
                     </h3>
-                    <div className="h-64 flex items-center justify-center text-gray-400">
-                        <TrendingUp className="h-16 w-16 mb-2" />
-                        <p>Biểu đồ nhóm thuốc</p>
+                    <div className="h-64 w-full">
+                        {/* Kiểm tra nếu có dữ liệu thì vẽ, không thì hiện thông báo */}
+                        {productMixData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={productMixData}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        outerRadius={80}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                        nameKey="name"
+                                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                            const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                            const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+                                            const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+                                            return (
+                                                <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
+                                                    {`${(percent * 100).toFixed(0)}%`}
+                                                </text>
+                                            );
+                                        }}
+                                    >
+                                        {productMixData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip formatter={(value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)} />
+                                    <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{ fontSize: '12px' }}/>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex h-full items-center justify-center text-gray-400 flex-col">
+                                <TrendingUp className="h-12 w-12 mb-2 opacity-50" />
+                                <p>Chưa có dữ liệu bán hàng</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
