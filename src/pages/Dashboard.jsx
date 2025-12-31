@@ -149,7 +149,7 @@ const Dashboard = () => {
             icon: AlertTriangle,
             bg: 'bg-red-50',
             iconColor: 'text-red-600',
-            link: '/stock-alerts',
+            link: '/drugs',
         },
         {
             title: 'Nhà cung cấp',

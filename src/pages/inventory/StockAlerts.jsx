@@ -56,9 +56,9 @@ const StockAlerts = () => {
         { key: 'soLuongHienTai', label: 'Số lượng hiện tại' },
         { key: 'soLuongToiThieu', label: 'Số lượng tối thiểu' },
         { 
-            key: 'ngayCapNhat', 
+            key: 'createdAt', 
             label: 'Ngày cập nhật',
-            render: (row) => row.ngayCapNhat ? new Date(row.ngayCapNhat).toLocaleString('vi-VN') : ''
+            render: (row) => row.createdAt ? new Date(row.createdAt).toLocaleString('vi-VN') : ''
         },
     ];
 
