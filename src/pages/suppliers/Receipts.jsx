@@ -223,6 +223,7 @@ const Receipts = () => {
                                 value={formData.maPhieuNhap}
                                 onChange={(e) => setFormData({ ...formData, maPhieuNhap: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                disabled
                             />
                         </div>
 
@@ -236,6 +237,7 @@ const Receipts = () => {
                                 value={formData.ngayNhap}
                                 onChange={(e) => setFormData({ ...formData, ngayNhap: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                disabled
                             />
                         </div>
 
@@ -268,6 +270,7 @@ const Receipts = () => {
                                 value={formData.maNV}
                                 onChange={(e) => setFormData({ ...formData, maNV: e.target.value })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                disabled
                             />
                         </div>
                     </div>
