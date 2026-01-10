@@ -44,7 +44,7 @@ const Dashboard = () => {
                 supplierService.getSuppliers(),
             ];
 
-            if (user && user.role === 'ADMIN') {
+            if (user && user.vaiTro === 'ADMIN') {
                 requests.push(drugService.getLowStockDrugs(10));
                 requests.push(drugService.getExpiringDrugs(30));
             }
