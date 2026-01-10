@@ -16,6 +16,7 @@ import {
 import drugService from '../services/drugService';
 import supplierService from '../services/supplierService';
 import reportService from '../services/reportService';
+import { useAuth } from '../hooks/auth';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -30,23 +31,30 @@ const Dashboard = () => {
 
     const [loading, setLoading] = useState(true);
 
+    const { user } = useAuth();
+
     useEffect(() => {
         fetchStats();
     }, []);
 
     const fetchStats = async () => {
         try {
-            const [drugs, lowStock, expiring, suppliers] = await Promise.all([
+            const requests = [
                 drugService.getDrugs(),
-                drugService.getLowStockDrugs(10),
-                drugService.getExpiringDrugs(30),
                 supplierService.getSuppliers(),
-            ]);
+            ];
+
+            if (user && user.role === 'ADMIN') {
+                requests.push(drugService.getLowStockDrugs(10));
+                requests.push(drugService.getExpiringDrugs(30));
+            }
+
+            const [drugs, suppliers, lowStock, expiring] = await Promise.all(requests);
 
             setStats({
                 totalDrugs: drugs.data.length,
-                lowStockDrugs: lowStock.data.length,
-                expiringDrugs: expiring.data.length,
+                lowStockDrugs: lowStock ? lowStock.data.length : 0,
+                expiringDrugs: expiring ? expiring.data.length : 0,
                 totalSuppliers: suppliers.data.length,
             });
             // lay doanh thu 7 ngay gan nhat
